@@ -34,6 +34,14 @@
         client.on('mensaje', function(payload) {
             console.log('Escuchando', payload);
         });
+
+        client.on('nuevo-mensaje', function(payload) {
+            console.log('Escuchando', payload);
+        });
+        client.on('active-bands', function(payload) {
+            console.clear();
+            console.table(payload);
+        });
     </script>
 
 </body>
