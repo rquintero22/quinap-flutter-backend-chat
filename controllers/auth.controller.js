@@ -95,7 +95,7 @@ const login = async(req, res = response) => {
 };
 
 const renewToken = async(req, res = response) => {
-    const { uid } = req.uid;
+    const { uid } = req;
     try {
 
         const usuarioDb = await Usuario.findById(uid);

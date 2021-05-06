@@ -1,56 +1,35 @@
 const { io } = require('../index');
-
-
-const Bands = require('../models/bands');
-const Band = require('../models/band');
-
-const bands = new Bands();
-
-bands.addBand(new Band('Queen'));
-bands.addBand(new Band('Bon Jovi'));
-bands.addBand(new Band('Héroes del Silencio'));
-bands.addBand(new Band('Metallica'));
+const { comprobarJWT } = require('../helpers/jwt');
+const { usuarioConectado, usuarioDesconectado, grabarMensaje, guardarMensaje } = require('../controllers/socket.controller');
 
 // Mensajes de sockets
 io.on('connection', client => {
     console.log('Cliente conectado');
-    // io.emit('mensaje', { admin: 'Usuario nuevo' });
 
-    client.emit('active-bands', bands.getBands());
+    const [valido, uid] = comprobarJWT(client.handshake.headers['x-token']);
+
+    // Evalua la autenticación
+    if (!valido) { return client.disconnect(); }
+
+    // Cliente válido
+    usuarioConectado(uid);
+
+    // Ingresar al usuario a una sala
+    client.join(uid);
+
+    client.on('mensaje-personal', async(payload) => {
+        // TODO: Guardar mensaje
+        await guardarMensaje(payload);
+
+        io.to(payload.para).emit('mensaje-personal', payload);
+    });
 
     client.on('disconnect', () => {
-        console.log('Cliente desconectado');
+        usuarioDesconectado(uid);
     });
 
 
-    client.on('mensaje', (payload) => {
-        console.log(payload);
-
-        io.emit('mensaje', { admin: 'Nuevo mensaje' });
-    });
-
-    client.on('vote-band', (payload) => {
-        bands.voteBand(payload.id);
-        io.emit('active-bands', bands.getBands());
-    });
 
 
-    client.on('add-band', (payload) => {
-        bands.addBand(new Band(payload.name));
-        io.emit('active-bands', bands.getBands());
-    });
-
-
-    client.on('delete-band', (payload) => {
-        bands.deleteBand(payload.id);
-        io.emit('active-bands', bands.getBands());
-    });
-
-
-    // client.on('emitir-mensaje', (payload) => {
-
-    //     // io.emit('nuevo-mensaje', payload); // emite a todos
-    //     client.broadcast.emit('nuevo-mensaje', payload); // emite a todos excepto a que lo emitió
-    // });
 
 });
